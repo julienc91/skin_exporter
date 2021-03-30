@@ -18,9 +18,9 @@ languages = ["english", "french"]
 
 class ItemTypes(IntEnum):
     weapon_skin = 1
-    player_skin = 2
+    agent_skin = 2
     glove_skin = 3
-    knive_skin = 4
+    knife_skin = 4
     sticker = 5
 
 
@@ -62,8 +62,10 @@ def parse_collection_items(items: list[str]) -> Generator[dict, None, None]:
                 "weapon": {"id": item.split("]")[1]},
             }
         except IndexError:
-            # player models
-            continue
+            res = {
+                "type": ItemTypes.agent_skin,
+                "id": item
+            }
         yield res
 
 
@@ -122,7 +124,7 @@ def parse_knives(items: list) -> Generator[dict, None, None]:
             if not item.startswith(knife_id + "_"):
                 continue
             yield {
-                "type": ItemTypes.knive_skin,
+                "type": ItemTypes.knife_skin,
                 "weapon": {"id": knife_id},
                 "paint_kit": item[len(knife_id) + 1 :],
             }
@@ -160,6 +162,14 @@ def fill_rarity(item: dict, paint_kits_rarity: dict):
     paint_kit = item["paint_kit"]
     rarity = paint_kits_rarity[paint_kit]
     item["rarity"] = rarity
+
+
+def fill_agent_info(item: dict, items: list[dict]):
+    for item_ in items:
+        if item_["name"] == item["id"]:
+            item["rarity"] = item_["item_rarity"]
+            item["name_key"] = parse_translation_key(item_["item_name"])
+            item["description_key"] = parse_translation_key(item_["item_description"])
 
 
 def fill_weapon_info(item: dict, items: list[dict]):
@@ -254,6 +264,8 @@ def run():
             fill_paintkit(item, paint_kits)
             fill_prefabs(item, prefabs)
             fill_rarity(item, paint_kits_rarity)
+        elif item["type"] is ItemTypes.agent_skin:
+            fill_agent_info(item, items)
         fill_translations(item, translations)
         print(json.dumps(item))
 
